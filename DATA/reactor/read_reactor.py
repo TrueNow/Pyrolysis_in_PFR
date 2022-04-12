@@ -1,7 +1,8 @@
 import openpyxl
 
 
-def read_reactor_from_xlsx(folder, filename):
+def read_reactor_from_xlsx(folder='D:/Models_In_Python/Work_Model v4.0/DATA/reactor',
+                           filename='Mol_Reactor.xlsx'):
     """
     cascade = {
         reactor: {

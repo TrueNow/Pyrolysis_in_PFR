@@ -1,9 +1,7 @@
-from src.Formula.VolumeFlow import VolumeFlow
-from src.Formula.Conc import Conc
-
+from DATA.reactor.read_reactor import read_reactor_from_xlsx
 
 class Cascade:
-    def __init__(self, cascade):
+    def __init__(self, cascade = read_reactor_from_xlsx()):
         self.cascade = {}
         for number, reactor in cascade.items():
             self.cascade[number] = Reactor(reactor)
@@ -90,7 +88,7 @@ class Section:
 
         self.__volume = reactor.volume / self.__numberOfSections
         self.__tay = 0
-        self.__volumeFlow = VolumeFlow.calc(molarFlow=self.__molarFlowIn, temp=self.__tempIn, press=self.__pressIn)
+        self.__volumeFlow = 0
 
     def next(self):
         if self.__count >= self.__numberOfSections:
@@ -103,16 +101,24 @@ class Section:
         self.__pressIn = self.__pressOut
         self.__pressOut += self.__pressDelta
 
-        self.__volumeFlow = VolumeFlow.calc(molarFlow=self.__molarFlowIn, temp=self.__tempIn, press=self.__pressIn)
+        self.__volumeFlow = self.calc_volume_flow(molarFlow=self.__molarFlowIn, temp=self.__tempIn, press=self.__pressIn)
 
         self.__tay = self.__volume / self.__volumeFlow
         self.__count += 1
         self.__timeCount += self.__tay
         return True
 
-    def get_component_concentration(self, model, name: str):
-        return Conc.calc(molarFraction=model.get_components().get_component(name).mol_fr,
-                         temp=self.temp_in, press=self.press_in)
+    @staticmethod
+    def calc_volume_flow(molarFlow, temp, press):
+        R = 8.31432
+        return molarFlow * R * (temp + 273.15) / press
+
+    def calc_component_concentration(self, model, name: str):
+        molarFraction = model.get_components().get_component(name).mol_fr
+        R = 8.31432
+        T = self.temp_in + 273.15
+        P = self.press_in
+        return molarFraction * P / (R * T)
 
     @property
     def molar_flow_in(self):
