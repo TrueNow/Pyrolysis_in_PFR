@@ -1,8 +1,11 @@
 from math import exp
+from DATA.reactions.read_reactions import read_reactions_from_xlsx
 
 
 class Reactions:
-    def __init__(self, reactions: dict):
+    def __init__(self, reactions=None):
+        if reactions is None:
+            reactions = read_reactions_from_xlsx()
         self.__reactions = {}
         for id, parameters in reactions.items():
             self.__reactions[id] = Reaction(parameters)
@@ -37,7 +40,7 @@ class Reaction:
         rate = self.calculate_k(temp)
         for component, coefficient in self.__balance.items():
             if coefficient < 0:
-                rate *= (model.get_section().get_component_concentration(model, component) ** (self.__order[component]))
+                rate *= (model.get_section().calc_component_concentration(model, component) ** (self.__order[component]))
         return rate
 
     def calculate_k(self, temp):

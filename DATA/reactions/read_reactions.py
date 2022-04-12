@@ -2,7 +2,7 @@ import openpyxl
 
 
 def read_reactions_from_xlsx(folder='D:/Models_In_Python/Work_Model v4.0/DATA/reactions',
-                             filename=''):
+                             filename='example.xlsx'):
     """
     reactions = {
         id: {
