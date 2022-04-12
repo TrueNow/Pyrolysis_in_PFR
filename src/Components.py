@@ -1,5 +1,10 @@
+from DATA.components.read_components import read_components_from_xlsx
+
+
 class Components:
-    def __init__(self, components: dict):
+    def __init__(self, components=None):
+        if components is None:
+            components = read_components_from_xlsx()
         self.__components = {}
         for name, parameters in components.items():
             self.__components[name] = Component(name, parameters)
@@ -13,19 +18,16 @@ class Components:
 
 class Component:
     def __init__(self, name: str, parameters: dict):
-        self.__name = name
-        self.__molarMass = parameters['Молярная масса']
-        self.__molFr = parameters['Мольная доля']
-        self.__type = parameters['Тип']
-        self.__formula = parameters['Формула']
+        self.__name = str(name)
+        self.__molarMass = float(parameters['Молярная масса'])
+        self.__molFr = float(parameters['Мольная доля'])
+        self.__massFr = 0.0
+        self.__type = bool(parameters['Молекула'])
+        self.__formula = str(parameters['Формула'])
 
     @property
     def molar_mass(self):
         return self.__molarMass
-
-    @molar_mass.setter
-    def molar_mass(self, value: float):
-        self.__molarMass = value
 
     @property
     def mol_fr(self):
@@ -36,17 +38,17 @@ class Component:
         self.__molFr = value
 
     @property
+    def mass_fr(self):
+        return self.__massFr
+
+    @mass_fr.setter
+    def mass_fr(self, value: float):
+        self.__massFr = value
+
+    @property
     def type(self):
         return self.__type
-
-    @type.setter
-    def type(self, value: str):
-        self.__type = value
 
     @property
     def formula(self):
         return self.__formula
-
-    @formula.setter
-    def formula(self, value: str):
-        self.__formula = value
