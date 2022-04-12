@@ -8,21 +8,25 @@ from src.Model import Model
 from GUI.winReactions import WinReactions
 from GUI.winComponents import WinComposition
 from GUI.winReactors import WinReactors
-from GUI.winInfo import WinInfo
+from GUI.winInfo import Error
+
+
+ERROR = Error()
 
 
 class WinMain(sg.Window):
-    __reactions: dict = {}
-    __components: dict = {}
-    __cascade: dict = {}
-    __all_components: dict = {}
+
+    global ERROR
 
     def __init__(self):
         super(WinMain, self).__init__('Главное окно', layout=self.layout_main())
         self.window_reactions = WinReactions()
         self.window_composition = WinComposition()
         self.window_reactors = WinReactors()
-        self.window_info = WinInfo(self)
+
+        self.__reactions = Reactions()
+        self.__components = Components()
+        self.__cascade = Cascade()
 
     def open_main(self):
         while True:
@@ -32,12 +36,12 @@ class WinMain(sg.Window):
                 break
 
             if event == '--BUTTON-REACTIONS--':
-                self.__reactions, self.__components = self.window_reactions.open()
-                self['--TABLE-REACTIONS--'].update(values=self.window_reactions.data)
+                self.window_composition.open(self.__components)
+                data = self.window_reactions.data
 
             elif event == '--BUTTON-COMPONENTS--':
-                self.__components = self.window_composition.open(self.__components)
-                self['--TABLE-COMPONENTS--'].update(values=self.window_composition.data)
+                self.window_composition.open(self.__components)
+                data = self.window_composition
 
             elif event == '--BUTTON-REACTORS--':
                 self.window_reactors.open()
@@ -51,7 +55,18 @@ class WinMain(sg.Window):
 
                 Model(reactions=reactions, components=components, cascade=cascade)
 
-                self.window_info.open()
+                ERROR.info(title='Выполнено', message='Расчет выполнен')
+
+            try:
+                self.update_main(event, data)
+            except:
+                pass
+
+    def update_main(self, item: str, values=None):
+        if values is None:
+            values = []
+        table = f'--TABLE-{item.split("-")[3]}--'
+        self[table].update(values=values)
 
     @staticmethod
     def layout_main() -> list:
@@ -89,35 +104,10 @@ class WinMain(sg.Window):
     def reactions(self):
         return self.__reactions
 
-    @reactions.setter
-    def reactions(self, value: dict):
-        self.__reactions = value
-
     @property
     def components(self):
         return self.__components
 
-    @components.setter
-    def components(self, value: dict):
-        self.__components = value
-
     @property
     def cascade(self):
         return self.__cascade
-
-    @cascade.setter
-    def cascade(self, value: dict):
-        self.__cascade = value
-
-    @property
-    def all_components(self):
-        return self.__all_components
-
-    @all_components.setter
-    def all_components(self, value: dict):
-        self.__all_components = value
-
-
-if __name__ == '__main__':
-    window = WinMain()
-    window.open_main()

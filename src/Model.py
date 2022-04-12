@@ -29,7 +29,7 @@ class Model:
         while self.__section.next() is True:
             concentration_inlet = {}
             for name, component in self.__components.get_components().items():
-                concentration_inlet[name] = self.__section.get_component_concentration(self, name)
+                concentration_inlet[name] = self.__section.calc_component_concentration(self, name)
 
             concentration_outlet = dict.copy(concentration_inlet)
             total_concentration_inlet = sum(concentration_inlet.values())
