@@ -21,8 +21,7 @@ def read_reactions_from_xlsx(folder='D:/Models_In_Python/Work_Model v4.0/DATA/re
     :rtype: dict
     """
 
-    file = f'{folder}/{filename}'
-    xlsx = openpyxl.load_workbook(f'{file}', data_only=True)
+    xlsx = openpyxl.load_workbook(f'{folder}/{filename}', data_only=True)
     sheet = xlsx.active
 
     reactions = {}

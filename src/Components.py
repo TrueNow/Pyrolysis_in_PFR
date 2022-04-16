@@ -2,12 +2,12 @@ from DATA.components.read_components import read_components_from_xlsx
 
 
 class Components:
-    def __init__(self, components=None):
-        if components is None:
-            components = read_components_from_xlsx()
+    def __init__(self, components):
+        all_components = read_components_from_xlsx()
         self.__components = {}
-        for name, parameters in components.items():
-            self.__components[name] = Component(name, parameters)
+        for name, parameters in all_components.items():
+            if name in components:
+                self.__components[name] = Component(name, parameters)
 
     def get_component(self, name: str):
         return self.__components[name]
@@ -19,7 +19,7 @@ class Components:
 class Component:
     def __init__(self, name: str, parameters: dict):
         self.__name = str(name)
-        self.__molarMass = float(parameters['Молярная масса'])
+        self.__molarMass = parameters['Молярная масса']
         self.__molFr = float(parameters['Мольная доля'])
         self.__massFr = 0.0
         self.__type = bool(parameters['Молекула'])

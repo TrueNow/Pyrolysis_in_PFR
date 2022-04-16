@@ -1,17 +1,21 @@
 from math import exp
-from DATA.reactions.read_reactions import read_reactions_from_xlsx
 
 
 class Reactions:
     def __init__(self, reactions=None):
-        if reactions is None:
-            reactions = read_reactions_from_xlsx()
         self.__reactions = {}
-        for id, parameters in reactions.items():
-            self.__reactions[id] = Reaction(parameters)
+        for id, reaction in reactions.items():
+            self.__reactions[id] = Reaction(reaction)
 
-    def get_reaction(self, name):
-        return self.__reactions[name]
+    def choose_used_components(self):
+        components = {}
+        for id, reaction in self.get_reactions().items():
+            for component in reaction.balance.keys():
+                components[component] = 0
+        return components
+
+    def get_reaction(self, id):
+        return self.__reactions[id]
 
     def get_reactions(self):
         return self.__reactions
@@ -54,22 +58,28 @@ class Reaction:
     def A(self):
         return self.__A
 
-    @A.setter
-    def A(self, value: float):
-        self.__A = value
-
     @property
     def E(self):
         return self.__E
-
-    @E.setter
-    def E(self, value: float):
-        self.__E = value
 
     @property
     def n(self):
         return self.__n
 
-    @n.setter
-    def n(self, value: float):
-        self.__n = value
+    @property
+    def equation(self):
+        return self.__equation
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def create_equation_reactions(self, reaction, components):
+        """Создает уравнение одной реакции"""
+        inlet, outlet = [], []
+        for name, value in reaction.__balance.items():
+            if value < 0:
+                inlet.append(f"{-value}{components.get_component(name).formula}")
+            else:
+                outlet.append(f"{value}{components.get_component(name).formula}")
+        self.__equation = ' + '.join(inlet) + ' ---> ' + ' + '.join(outlet)
