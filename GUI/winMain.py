@@ -2,9 +2,6 @@ import PySimpleGUI as sg
 
 from tkinter import messagebox
 
-from src.Reactions import Reactions
-from src.Components import Components
-from src.Reactor import Cascade
 from src.Model import Model
 
 from GUI.winReactions import WinReactions
@@ -12,9 +9,14 @@ from GUI.winComponents import WinComposition
 from GUI.winReactors import WinReactors
 
 
+
 class WinMain(sg.Window):
+    _reactions = ''
+    _components = ''
+    _cascade = ''
+
     def __init__(self):
-        super(WinMain, self).__init__('Главное окно', layout=self.layout_main())
+        super(WinMain, self).__init__('Главное окно', layout=self.layout_main(), size=(800, 600))
 
     def open_main(self):
         while True:
@@ -27,16 +29,10 @@ class WinMain(sg.Window):
                 WinReactions(self).open()
 
             elif event == 'BUTTON-COMPONENTS':
-                self.window_composition = WinComposition(self)
-                self.window_composition.open()
+                WinComposition(self).open()
 
             elif event == 'BUTTON-REACTORS':
-                try:
-                    window_reactors = WinReactors(self)
-                    window_reactors.open()
-                    self.update_table(event, window_reactors.table_data())
-                except:
-                    pass
+                WinReactors(self).open()
 
             elif event == 'BUTTON-START':
                 self.close()
@@ -83,24 +79,24 @@ class WinMain(sg.Window):
 
     @property
     def reactions(self):
-        return self.__reactions
+        return self._reactions
 
     @reactions.setter
     def reactions(self, value):
-        self.__reactions = value
+        self._reactions = value
 
     @property
     def components(self):
-        return self.__components
+        return self._components
 
     @components.setter
     def components(self, value):
-        self.__components = value
+        self._components = value
 
     @property
     def cascade(self):
-        return self.__cascade
+        return self._cascade
 
     @cascade.setter
     def cascade(self, value):
-        self.__cascade = value
+        self._cascade = value

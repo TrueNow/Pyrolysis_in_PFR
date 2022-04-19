@@ -14,6 +14,7 @@ class WinReactions(sg.Window):
 
     def open(self):
         """Открытие окна и считывание действий"""
+        global data_table_values
         file_list, folder = self.get_files()
         self.layout(self.layout_reactions(file_list))
 
@@ -26,13 +27,10 @@ class WinReactions(sg.Window):
             if event == 'LIST':
                 filename = values[event][0]
                 new_reactions = read_reactions_from_xlsx(folder, filename)
-
                 self.main.reactions = Reactions(new_reactions)
                 self.main.components = Components(self.main.reactions.choose_used_components())
-
                 for reaction in self.main.reactions.get_reactions().values():
                     reaction.create_equation_reactions(reaction, self.main.components)
-
                 data_table_values = self.update_table()
 
             elif event == 'OK':
@@ -52,32 +50,17 @@ class WinReactions(sg.Window):
         ]
         return names, folder
 
-    # def get_used_components(self) -> dict:
-    #     """Сортировка компонентов"""
-    #     components_dict = {'Вода': self._dict_all_components['Вода']}
-    #     for reaction in self._dict_reactions.values():
-    #         for name, coefficient in reaction['Components'].items():
-    #             components_dict[name] = self._dict_all_components[name]
-    #
-    #     sort_components = {}
-    #     for component in self._dict_all_components.keys():
-    #         if component in components_dict:
-    #             sort_components[component] = components_dict[component]
-    #     return sort_components
-
     def update_table(self):
-        data_table_values = []
+        table_data = []
         for id, reaction in self.main.reactions.get_reactions().items():
-            data_table_values.append(
-                [
-                    id,
-                    self.main.reactions.get_reaction(id).equation,
-                    '{:2.3e}'.format(reaction.A),
-                    '{:.2f}'.format(reaction.E)
-                ]
-            )
-        self[f'TABLE'].update(values=data_table_values)
-        return data_table_values
+            table_data.append([
+                id,
+                reaction.equation,
+                f'{reaction.A:2.3e}',
+                f'{reaction.E:.2f}'
+            ])
+        self[f'TABLE'].update(values=table_data)
+        return table_data
 
     @staticmethod
     def layout_reactions(names) -> list:

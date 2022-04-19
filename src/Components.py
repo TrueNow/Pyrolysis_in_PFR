@@ -9,6 +9,25 @@ class Components:
             if name in components:
                 self.__components[name] = Component(name, parameters)
 
+    def calculate_fractions(self, values):
+        """Расчет компонентоного состава"""
+        for name, value in values.items():
+            self.get_component(name.split('_')[1]).mol_fr = value
+        summary_mol = 0
+        summary_mass = 0
+        for name, component in self.__components.items():
+            summary_mol += component.mol_fr
+            component.mass_fr = component.mol_fr * component.molar_mass
+            summary_mass += component.mass_fr
+
+        for component in self.__components.values():
+            try:
+                component.mol_fr /= summary_mol
+                component.mass_fr /= summary_mass
+            except ZeroDivisionError:
+                component.mol_fr = 0
+                component.mass_fr = 0
+
     def get_component(self, name: str):
         return self.__components[name]
 
@@ -35,7 +54,11 @@ class Component:
 
     @mol_fr.setter
     def mol_fr(self, value: float):
-        self.__molFr = value
+        try:
+            if float(value) > 0:
+                self.__molFr = float(value)
+        except ValueError:
+            self.__molFr = 0
 
     @property
     def mass_fr(self):

@@ -1,7 +1,8 @@
 from DATA.reactor.read_reactor import read_reactor_from_xlsx
 
+
 class Cascade:
-    def __init__(self, cascade = read_reactor_from_xlsx()):
+    def __init__(self, cascade):
         self.cascade = {}
         for number, reactor in cascade.items():
             self.cascade[number] = Reactor(reactor)
@@ -101,7 +102,8 @@ class Section:
         self.__pressIn = self.__pressOut
         self.__pressOut += self.__pressDelta
 
-        self.__volumeFlow = self.calc_volume_flow(molarFlow=self.__molarFlowIn, temp=self.__tempIn, press=self.__pressIn)
+        self.__volumeFlow = self.calc_volume_flow(molarFlow=self.__molarFlowIn, temp=self.__tempIn,
+                                                  press=self.__pressIn)
 
         self.__tay = self.__volume / self.__volumeFlow
         self.__count += 1

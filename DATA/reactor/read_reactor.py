@@ -14,16 +14,15 @@ def read_reactor_from_xlsx(folder='D:/Models_In_Python/Work_Model v4.0/DATA/reac
             'Объем': float,\n
             'Кол-во шагов': float,\n
             'Мольный расход': float,\n
-        }
+        },
+        ...
     }
 
     :return: All reactor from xlsx file
     :rtype: dict
     """
 
-    file = f'{folder}/{filename}'
-
-    xlsx = openpyxl.load_workbook(file, data_only=True)
+    xlsx = openpyxl.load_workbook(f'{folder}/{filename}', data_only=True)
     sheet = xlsx.active
 
     cascade = {}

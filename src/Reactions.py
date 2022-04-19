@@ -2,7 +2,7 @@ from math import exp
 
 
 class Reactions:
-    def __init__(self, reactions=None):
+    def __init__(self, reactions):
         self.__reactions = {}
         for id, reaction in reactions.items():
             self.__reactions[id] = Reaction(reaction)
