@@ -14,7 +14,6 @@ class WinReactors(sg.Window):
 
     def open(self):
         """Открытие окна и считывание действий"""
-        global data_table_values
         file_list, folder = self.get_files()
         self.layout(self.layout_reactor(file_list))
 
@@ -27,28 +26,15 @@ class WinReactors(sg.Window):
             elif event == 'LIST':
                 filename = values[event][0]
                 new_cascade = read_reactor_from_xlsx(folder, filename)
-                self.main.cascade = Cascade(new_cascade)
-                data_table_values = self.update_table()
+                self.main.cascade = Cascade(new_cascade, filename)
+                self[f'TABLE'].update(values=self.main.cascade.get_cascade_layout())
 
             elif event == 'OK':
                 try:
-                    self.main.update_table('REACTORS', data_table_values)
+                    self.main.update_table('REACTORS', self.main.cascade.get_cascade_layout())
                 except UnboundLocalError:
                     pass
                 self.close()
-
-    def update_table(self):
-        table_data = []
-        for number, reactor in self.main.cascade.get_cascade().items():
-            reactors = [
-                reactor.name,
-                reactor.temp_in, reactor.temp_out,
-                reactor.press_in, reactor.press_out,
-                reactor.volume, f'{reactor.steps:.1e}'
-            ]
-            table_data.append(reactors)
-        self[f'TABLE'].update(values=table_data)
-        return table_data
 
     @staticmethod
     def get_files():

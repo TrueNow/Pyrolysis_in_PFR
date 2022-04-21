@@ -2,10 +2,11 @@ from math import exp
 
 
 class Reactions:
-    def __init__(self, reactions):
-        self.__reactions = {}
+    def __init__(self, reactions, filename):
+        self.filename = filename
+        self._reactions = {}
         for id, reaction in reactions.items():
-            self.__reactions[id] = Reaction(reaction)
+            self._reactions[id] = Reaction(reaction)
 
     def choose_used_components(self):
         components = {}
@@ -15,71 +16,71 @@ class Reactions:
         return components
 
     def get_reaction(self, id):
-        return self.__reactions[id]
+        return self._reactions[id]
 
     def get_reactions(self):
-        return self.__reactions
+        return self._reactions
 
 
 class Reaction:
     def __init__(self, parameters: dict):
-        self.__A = parameters['A']
-        self.__E = parameters['E']
-        self.__n = parameters['n']
-        self.__balance = {}
+        self._A = parameters['A']
+        self._E = parameters['E']
+        self._n = parameters['n']
+        self._balance = {}
         divider = parameters['Divider']
         for name, value in parameters['Components'].items():
-            self.__balance[name] = value / divider
-        self.__order = parameters['Order']
-        self.__equation = parameters['equation']
+            self._balance[name] = value / divider
+        self._order = parameters['Order']
+        self._equation = parameters['equation']
 
-    def calculate(self, model, temp, tay):
-        rate = self.calculate_rate(model, temp)
+    def calculate(self, components, section):
+        rate = self.calculate_rate(components, section)
         result = {}
-        for name, coefficient in self.__balance.items():
-            result[name] = rate * tay * coefficient
+        for name, coefficient in self._balance.items():
+            result[name] = rate * section.tay * coefficient
         return result
 
-    def calculate_rate(self, model, temp):
-        rate = self.calculate_k(temp)
-        for component, coefficient in self.__balance.items():
+    def calculate_rate(self, components, section):
+        rate = self.calculate_k(section)
+        for component, coefficient in self._balance.items():
             if coefficient < 0:
-                rate *= (model.get_section().calc_component_concentration(model, component) ** (self.__order[component]))
+                rate *= (components.get_component(component).calc_concentration(section) ** (self._order[component]))
         return rate
 
-    def calculate_k(self, temp):
+    def calculate_k(self, section):
         R = 8.31432
         A = self.A
         E = self.E * 1000
-        T = temp + 273.15
+        T = section.temp_in + 273.15
         return A * exp(- E / (R * T))
 
     @property
     def A(self):
-        return self.__A
+        return self._A
 
     @property
     def E(self):
-        return self.__E
+        return self._E
 
     @property
     def n(self):
-        return self.__n
+        return self._n
 
     @property
     def equation(self):
-        return self.__equation
+        return self._equation
 
     @property
     def balance(self):
-        return self.__balance
+        return self._balance
 
-    def create_equation_reactions(self, reaction, components):
+    def set_equation(self, components):
         """Создает уравнение одной реакции"""
         inlet, outlet = [], []
-        for name, value in reaction.__balance.items():
+        for name, value in self.balance.items():
             if value < 0:
                 inlet.append(f"{-value}{components.get_component(name).formula}")
             else:
                 outlet.append(f"{value}{components.get_component(name).formula}")
-        self.__equation = ' + '.join(inlet) + ' ---> ' + ' + '.join(outlet)
+        self._equation = ' + '.join(inlet) + ' ---> ' + ' + '.join(outlet)

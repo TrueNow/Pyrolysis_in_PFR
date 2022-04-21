@@ -4,8 +4,7 @@ import openpyxl
 class Saver:
     """Модуль предназначен для сохранения введенных данных и результатов в таблицу Excel"""
 
-    row_add = 0
-    start_col = 0
+    start_row = 1
 
     def __init__(self, model):
         self.model = model
@@ -29,7 +28,7 @@ class Saver:
             ['Давление', reactor.press_in, reactor.press_out, 'кПа', '0.00'],
             ['Объем реактора', reactor.volume, None, 'м3', '0.00'],
             ['Число секций', reactor.steps, None, 'шт', '0'],
-            ['Время пребывания', reactor.get_section().time_count, None, 'с', '0.000000']
+            ['Время пребывания', reactor.residence_time, None, 'с', '0.000000']
         ]
 
         for string in list_reactor:
@@ -51,11 +50,6 @@ class Saver:
         row = start_row
         column = start_column
 
-        sum_mol_fr = 0
-        sum_mol = 0
-        sum_mass = 0
-        sum_mass_fr = 0
-
         params = self.rounder('Component', 'MolarMass', 'MolFr', 'Mol', 'Mass', 'MassFr')
         for param in params.values():
             self.sheet.cell(row=row, column=column, value=param['value']).number_format = param['rounding']
@@ -63,11 +57,6 @@ class Saver:
 
         for name, component in self.model.get_components().get_components().items():
             row += 1
-
-            sum_mol_fr += component.mol_fr
-            sum_mol += component.mol
-            sum_mass += component.mass
-            sum_mass_fr += component.mass_fr
 
             column = start_column
             params = self.rounder(name, component.molar_mass, component.mol_fr, component.mol, component.mass, component.mass_fr)
@@ -77,7 +66,8 @@ class Saver:
 
         column = start_column
         row += 1
-        params = self.rounder('Сумма', None, sum_mol_fr, sum_mol, sum_mass, sum_mass_fr)
+        components = self.model.get_components()
+        params = self.rounder('Сумма', None, components.get_mol_fr(), components.get_mol_flow(), components.get_mass_flow(), components.get_mass_fr())
         for param in params.values():
             self.sheet.cell(row=row, column=column, value=param['value']).number_format = param['rounding']
             column += 1

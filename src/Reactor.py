@@ -1,113 +1,137 @@
-from DATA.reactor.read_reactor import read_reactor_from_xlsx
-
-
 class Cascade:
-    def __init__(self, cascade):
+    def __init__(self, cascade, filename):
+        self.layout = []
         self.cascade = {}
-        for number, reactor in cascade.items():
-            self.cascade[number] = Reactor(reactor)
+        self.filename = filename
+        for name, reactor in cascade.items():
+            self.cascade[name] = Reactor(reactor)
+        self.set_cascade_layout()
+
+    def set_cascade_layout(self):
+        for name, reactor in self.cascade.items():
+            self.layout.append(
+                [
+                    self.cascade[name].name,
+                    self.cascade[name].temp_in, self.cascade[name].temp_out,
+                    self.cascade[name].press_in, self.cascade[name].press_out,
+                    self.cascade[name].volume,
+                    f'{self.cascade[name].steps:.1e}'
+                ]
+            )
+
+    def get_cascade_layout(self):
+        return self.layout
 
     def get_cascade(self):
         return self.cascade
 
-    def get_reactor(self, key):
-        return self.cascade[key]
+    def get_reactor(self, name):
+        return self.cascade[name]
 
 
 class Reactor:
     def __init__(self, reactor):
-        self.__name = reactor['Наименование']
-        self.__tempIn = reactor['Температура вход']
-        self.__tempOut = reactor['Температура выход']
-        self.__pressIn = reactor['Давление вход']
-        self.__pressOut = reactor['Давление выход']
-        self.__volume = reactor['Объем']
-        self.__steps = reactor['Кол-во шагов']
-        self.__molarFlowIn = reactor['Мольный расход']
-        self.__section = None
+        self._name = reactor['Наименование']
+        self._temp_in = reactor['Температура вход']
+        self._temp_out = reactor['Температура выход']
+        self._press_in = reactor['Давление вход']
+        self._press_out = reactor['Давление выход']
+        self._volume = reactor['Объем']
+        self._steps = reactor['Кол-во шагов']
+        self._molar_flow_in = reactor['Мольный расход']
+        self._residence_time = 0
+        self._section = Section(self)
 
     @property
     def name(self):
-        return self.__name
+        return self._name
 
     @property
     def temp_in(self):
-        return self.__tempIn
+        return self._temp_in
 
     @property
     def temp_out(self):
-        return self.__tempOut
+        return self._temp_out
 
     @property
     def press_in(self):
-        return self.__pressIn
+        return self._press_in
 
     @property
     def press_out(self):
-        return self.__pressOut
+        return self._press_out
 
     @property
     def volume(self):
-        return self.__volume
+        return self._volume
 
     @property
     def steps(self):
-        return self.__steps
+        return self._steps
+
+    @property
+    def residence_time(self):
+        return self._residence_time
+
+    @residence_time.setter
+    def residence_time(self, value: float):
+        self._residence_time = value
 
     @property
     def molar_flow_in(self):
-        return self.__molarFlowIn
+        return self._molar_flow_in
 
     @molar_flow_in.setter
     def molar_flow_in(self, value: float):
-        self.__molarFlowIn = value
-
-    def create_section(self):
-        self.__section = Section(self)
-        return self.__section
+        self._molar_flow_in = value
 
     def get_section(self):
-        return self.__section
+        return self._section
 
 
 class Section:
-    __count = 0
-    __timeCount = 0
+    _count = 0
+    _timeCount = 0
 
     def __init__(self, reactor):
-        self.__numberOfSections = reactor.steps
-        self.__molarFlowIn = reactor.molar_flow_in
-        self.__molarFlowOut = self.__molarFlowIn
+        self.reactor = reactor
+        self._number_of_sections = reactor.steps
+        self._molar_flow_in = reactor.molar_flow_in
+        self._molar_flow_out = self._molar_flow_in
 
-        self.__tempIn = reactor.temp_in
-        self.__tempDelta = (reactor.temp_out - reactor.temp_in) / self.__numberOfSections
-        self.__tempOut = self.__tempIn
+        self._tempIn = reactor.temp_in
+        self._tempDelta = (reactor.temp_out - reactor.temp_in) / self._number_of_sections
+        self._tempOut = self._tempIn
 
-        self.__pressIn = reactor.press_in
-        self.__pressDelta = (reactor.press_out - reactor.press_in) / self.__numberOfSections
-        self.__pressOut = self.__pressIn
+        self._pressIn = reactor.press_in
+        self._pressDelta = (reactor.press_out - reactor.press_in) / self._number_of_sections
+        self._pressOut = self._pressIn
 
-        self.__volume = reactor.volume / self.__numberOfSections
-        self.__tay = 0
-        self.__volumeFlow = 0
+        self._volume = reactor.volume / self._number_of_sections
+        self._tay = 0
+        self._volumeFlow = 0
 
     def next(self):
-        if self.__count >= self.__numberOfSections:
+        if self._count >= self._number_of_sections:
             return False
-        self.__molarFlowIn = self.__molarFlowOut
+        self._molar_flow_in = self._molar_flow_out
 
-        self.__tempIn = self.__tempOut
-        self.__tempOut += self.__tempDelta
+        self._tempIn = self._tempOut
+        self._tempOut += self._tempDelta
 
-        self.__pressIn = self.__pressOut
-        self.__pressOut += self.__pressDelta
+        self._pressIn = self._pressOut
+        self._pressOut += self._pressDelta
 
-        self.__volumeFlow = self.calc_volume_flow(molarFlow=self.__molarFlowIn, temp=self.__tempIn,
-                                                  press=self.__pressIn)
+        self._volumeFlow = self.calc_volume_flow(molarFlow=self._molar_flow_in, temp=self._tempIn,
+                                                 press=self._pressIn)
 
-        self.__tay = self.__volume / self.__volumeFlow
-        self.__count += 1
-        self.__timeCount += self.__tay
+        self._tay = self._volume / self._volumeFlow
+        self._count += 1
+        self.reactor.residence_time += self._tay
+        percent = self._count / self._number_of_sections * 100
+        if percent in [20, 40, 60, 80, 100]:
+            print(f'Статус расчета {int(percent)} %')
         return True
 
     @staticmethod
@@ -115,61 +139,54 @@ class Section:
         R = 8.31432
         return molarFlow * R * (temp + 273.15) / press
 
-    def calc_component_concentration(self, model, name: str):
-        molarFraction = model.get_components().get_component(name).mol_fr
-        R = 8.31432
-        T = self.temp_in + 273.15
-        P = self.press_in
-        return molarFraction * P / (R * T)
-
     @property
     def molar_flow_in(self):
-        return self.__molarFlowIn
+        return self._molar_flow_in
 
     @molar_flow_in.setter
     def molar_flow_in(self, value: float):
-        self.__molarFlowIn = value
+        self._molar_flow_in = value
 
     @property
     def molar_flow_out(self):
-        return self.__molarFlowOut
+        return self._molar_flow_out
 
     @molar_flow_out.setter
     def molar_flow_out(self, value: float):
-        self.__molarFlowOut = value
+        self._molar_flow_out = value
 
     @property
     def temp_in(self):
-        return self.__tempIn
+        return self._tempIn
 
     @property
     def temp_out(self):
-        return self.__tempOut
+        return self._tempOut
 
     @property
     def press_in(self):
-        return self.__pressIn
+        return self._pressIn
 
     @property
     def press_out(self):
-        return self.__pressOut
+        return self._pressOut
 
     @property
     def volume(self):
-        return self.__volume
+        return self._volume
 
     @property
     def tay(self):
-        return self.__tay
+        return self._tay
 
     @property
     def time_count(self):
-        return self.__timeCount
+        return self._timeCount
 
     @property
     def count(self):
-        return self.__count
+        return self._count
 
     @property
     def numberOfSections(self):
-        return self.__numberOfSections
+        return self._number_of_sections

@@ -14,7 +14,6 @@ class WinReactions(sg.Window):
 
     def open(self):
         """Открытие окна и считывание действий"""
-        global data_table_values
         file_list, folder = self.get_files()
         self.layout(self.layout_reactions(file_list))
 
@@ -27,10 +26,10 @@ class WinReactions(sg.Window):
             if event == 'LIST':
                 filename = values[event][0]
                 new_reactions = read_reactions_from_xlsx(folder, filename)
-                self.main.reactions = Reactions(new_reactions)
+                self.main.reactions = Reactions(new_reactions, filename)
                 self.main.components = Components(self.main.reactions.choose_used_components())
                 for reaction in self.main.reactions.get_reactions().values():
-                    reaction.create_equation_reactions(reaction, self.main.components)
+                    reaction.set_equation(self.main.components)
                 data_table_values = self.update_table()
 
             elif event == 'OK':
