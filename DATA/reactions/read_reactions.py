@@ -14,13 +14,9 @@ def read_reactions_from_xlsx(folder='./DATA/reactions',
         id = sheet.cell(column=1, row=row_id).value
         if id is not None:
             parameters = {
-                'id': id,
-                'components': {},
-                'divider': 0,
-                'order': {},
-                'A': 0,
-                'E': 0,
-                'n': 0,
+                'id': id, 'balance': {},
+                'divider': 0, 'order': {},
+                'A': 0, 'E': 0, 'n': 0,
                 'equation': ''
             }
 
@@ -41,6 +37,5 @@ def read_reactions_from_xlsx(folder='./DATA/reactions',
             row_id += 4
 
             reactions.add_reaction(id, parameters)
-
         else:
             return reactions

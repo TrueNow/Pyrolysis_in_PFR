@@ -8,7 +8,7 @@ def read_reactor_from_xlsx(folder='./DATA/reactor',
     sheet = xlsx.active
 
     cascade = Cascade(filename)
-    data = []
+    # data = []
 
     for row in range(2, sheet.max_row + 1):
         name = sheet.cell(column=1, row=row).value
@@ -19,5 +19,5 @@ def read_reactor_from_xlsx(folder='./DATA/reactor',
             except ValueError:
                 parameters[sheet.cell(column=col, row=1).value] = sheet.cell(column=col, row=row).value
         cascade.add_reactor(name, parameters)
-        data.append([*parameters.values()])
-    return cascade, data
+        # data.append([*parameters.values()])
+    return cascade
