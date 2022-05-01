@@ -1,9 +1,8 @@
 import os.path
 import PySimpleGUI as sg
 
-from src.Reactions import Reactions
-from src.Components import Components
 from DATA.reactions.read_reactions import read_reactions_from_xlsx
+from DATA.components.read_components import read_components_from_xlsx
 
 
 class WinReactions(sg.Window):
@@ -25,23 +24,24 @@ class WinReactions(sg.Window):
 
             if event == 'LIST':
                 filename = values[event][0]
-                new_reactions = read_reactions_from_xlsx(folder, filename)
-                self.main.reactions = Reactions(new_reactions, filename)
-                self.main.components = Components(self.main.reactions.choose_used_components())
-                for reaction in self.main.reactions.get_reactions().values():
+                self.main.reactions = read_reactions_from_xlsx(folder, filename)
+                self.main.components = read_components_from_xlsx(components_dict=self.main.reactions.choose_used_components())
+                for reaction in self.main.reactions.reactions.values():
                     reaction.set_equation(self.main.components)
                 data_table_values = self.update_table()
+                self[f'TABLE'].update(values=data_table_values)
 
             elif event == 'OK':
                 try:
-                    self.main.update_table('REACTIONS', data_table_values)
+                    data_table_values = self.update_table()
+                    self.main[f'TABLE-REACTIONS'].update(data_table_values)
                 except UnboundLocalError:
                     pass
                 self.close()
 
     @staticmethod
     def get_files():
-        folder = 'D:/Models_In_Python/Work_Model v4.0/DATA/reactions'
+        folder = './DATA/reactions'
         file_list = os.listdir(folder)
         names = [
             f for f in file_list
@@ -58,7 +58,6 @@ class WinReactions(sg.Window):
                 f'{reaction.A:2.3e}',
                 f'{reaction.E:.2f}'
             ])
-        self[f'TABLE'].update(values=table_data)
         return table_data
 
     @staticmethod

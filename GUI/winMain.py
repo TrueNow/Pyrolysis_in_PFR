@@ -9,7 +9,6 @@ from GUI.winComponents import WinComposition
 from GUI.winReactors import WinReactors
 
 
-
 class WinMain(sg.Window):
     _reactions = ''
     _components = ''
@@ -22,28 +21,19 @@ class WinMain(sg.Window):
         while True:
             event, values = self.read()
 
-            if event == sg.WIN_CLOSED:
-                break
-
-            if event == 'BUTTON-REACTIONS':
-                WinReactions(self).open()
-
-            elif event == 'BUTTON-COMPONENTS':
-                WinComposition(self).open()
-
-            elif event == 'BUTTON-REACTORS':
-                WinReactors(self).open()
-
-            elif event == 'BUTTON-START':
-                self.close()
-                Model(reactions=self.reactions, components=self.components, cascade=self.cascade)
-                messagebox.showinfo(title='Выполнено', message='Расчет выполнен')
-
-    def update_table(self, window: str, values=None):
-        if values is None:
-            values = []
-        table = f'TABLE-{window}'
-        self[table].update(values=values)
+            match event:
+                case sg.WIN_CLOSED:
+                    break
+                case "BUTTON-REACTIONS":
+                    WinReactions(self).open()
+                case "BUTTON-COMPONENTS":
+                    WinComposition(self).open()
+                case "BUTTON-REACTORS":
+                    WinReactors(self).open()
+                case "BUTTON-START":
+                    self.close()
+                    Model(reactions=self.reactions, components=self.components, cascade=self.cascade)
+                    messagebox.showinfo(title='Выполнено', message='Расчет выполнен')
 
     @staticmethod
     def layout_main() -> list:
