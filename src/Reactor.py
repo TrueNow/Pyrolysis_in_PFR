@@ -1,192 +1,131 @@
-class Cascade:
-    def __init__(self, cascade, filename):
-        self.layout = []
-        self.cascade = {}
-        self.filename = filename
-        for name, reactor in cascade.items():
-            self.cascade[name] = Reactor(reactor)
-        self.set_cascade_layout()
-
-    def set_cascade_layout(self):
-        for name, reactor in self.cascade.items():
-            self.layout.append(
-                [
-                    self.cascade[name].name,
-                    self.cascade[name].temp_in, self.cascade[name].temp_out,
-                    self.cascade[name].press_in, self.cascade[name].press_out,
-                    self.cascade[name].volume,
-                    f'{self.cascade[name].steps:.1e}'
-                ]
-            )
-
-    def get_cascade_layout(self):
-        return self.layout
-
-    def get_cascade(self):
-        return self.cascade
-
-    def get_reactor(self, name):
-        return self.cascade[name]
-
-
-class Reactor:
-    def __init__(self, reactor):
-        self._name = reactor['Наименование']
-        self._temp_in = reactor['Температура вход']
-        self._temp_out = reactor['Температура выход']
-        self._press_in = reactor['Давление вход']
-        self._press_out = reactor['Давление выход']
-        self._volume = reactor['Объем']
-        self._steps = reactor['Кол-во шагов']
-        self._molar_flow_in = reactor['Мольный расход']
-        self._residence_time = 0
-        self._section = Section(self)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def temp_in(self):
-        return self._temp_in
-
-    @property
-    def temp_out(self):
-        return self._temp_out
-
-    @property
-    def press_in(self):
-        return self._press_in
-
-    @property
-    def press_out(self):
-        return self._press_out
-
-    @property
-    def volume(self):
-        return self._volume
-
-    @property
-    def steps(self):
-        return self._steps
-
-    @property
-    def residence_time(self):
-        return self._residence_time
-
-    @residence_time.setter
-    def residence_time(self, value: float):
-        self._residence_time = value
-
-    @property
-    def molar_flow_in(self):
-        return self._molar_flow_in
-
-    @molar_flow_in.setter
-    def molar_flow_in(self, value: float):
-        self._molar_flow_in = value
-
-    def get_section(self):
-        return self._section
-
-
 class Section:
-    _count = 0
-    _timeCount = 0
+    """Section in the reactor for step-by-step calculation"""
 
     def __init__(self, reactor):
         self.reactor = reactor
-        self._number_of_sections = reactor.steps
-        self._molar_flow_in = reactor.molar_flow_in
-        self._molar_flow_out = self._molar_flow_in
 
-        self._tempIn = reactor.temp_in
-        self._tempDelta = (reactor.temp_out - reactor.temp_in) / self._number_of_sections
-        self._tempOut = self._tempIn
+        self.current_section = 0
+        self.number_of_sections = self.reactor.number_of_sections
 
-        self._pressIn = reactor.press_in
-        self._pressDelta = (reactor.press_out - reactor.press_in) / self._number_of_sections
-        self._pressOut = self._pressIn
+        self.molar_flow = self.reactor.molar_flow
 
-        self._volume = reactor.volume / self._number_of_sections
-        self._tay = 0
-        self._volumeFlow = 0
+        self.temperature_delta = self.reactor.temperature_delta
+        self.temperature_inlet = self.reactor.temperature_inlet
+        self.temperature_outlet = self.temperature_inlet
 
-    def next(self):
-        if self._count >= self._number_of_sections:
+        self.pressure_delta = self.reactor.pressure_delta
+        self.pressure_inlet = self.reactor.pressure_inlet
+        self.pressure_outlet = self.pressure_inlet
+
+        self.volume = self.reactor.volume / self.number_of_sections
+
+        self.time = 0
+        self.volume_flow = 0
+
+    def next(self) -> bool:
+        if self.current_section >= self.number_of_sections:
             return False
-        self._molar_flow_in = self._molar_flow_out
 
-        self._tempIn = self._tempOut
-        self._tempOut += self._tempDelta
+        self.temperature_inlet = self.temperature_outlet
+        self.temperature_outlet += self.temperature_delta
 
-        self._pressIn = self._pressOut
-        self._pressOut += self._pressDelta
+        self.pressure_inlet = self.pressure_outlet
+        self.pressure_outlet += self.pressure_delta
 
-        self._volumeFlow = self.calc_volume_flow(molarFlow=self._molar_flow_in, temp=self._tempIn,
-                                                 press=self._pressIn)
+        self.volume_flow = self.calculate_volume_flow()
 
-        self._tay = self._volume / self._volumeFlow
-        self._count += 1
-        self.reactor.residence_time += self._tay
-        percent = self._count / self._number_of_sections * 100
+        self.time = self.volume / self.volume_flow
+
+        self.current_section += 1
+        self.reactor.time += self.time
+
+        percent = self.current_section / self.number_of_sections * 100
         if percent in [20, 40, 60, 80, 100]:
             print(f'Статус расчета {int(percent)} %')
         return True
 
-    @staticmethod
-    def calc_volume_flow(molarFlow, temp, press):
+    def calculate_volume_flow(self) -> float:
         R = 8.31432
-        return molarFlow * R * (temp + 273.15) / press
+        return self.molar_flow * R * (self.temperature_inlet + 273.15) / self.pressure_inlet
+
+
+class Reactor:
+    def __init__(self, name, temp_in, temp_out, press_in, press_out, molar_flow_in, volume, steps):
+        self.name = name
+        self.temperature = [temp_in, temp_out, (temp_out - temp_in) / steps]
+        self.pressure = [press_in, press_out, (press_out - press_in) / steps]
+        self.molar_flow = molar_flow_in
+        self.volume = volume
+        self.number_of_sections = int(steps)
+        self.time = 0
+
+        self.section = Section(self)
+
+    def __repr__(self):
+        return f'_____{self.name}_____\n' \
+               f'Temperature: {self.temperature}\n' \
+               f'Pressure: {self.pressure}\n' \
+               f'Molar flow: {self.molar_flow}\n' \
+               f'Volume: {self.volume}\n' \
+               f'Steps: {self.number_of_sections}\n'
+
+    def get_section(self):
+        return self.section
 
     @property
-    def molar_flow_in(self):
-        return self._molar_flow_in
+    def temperature_inlet(self):
+        return self.temperature[0]
 
-    @molar_flow_in.setter
-    def molar_flow_in(self, value: float):
-        self._molar_flow_in = value
-
-    @property
-    def molar_flow_out(self):
-        return self._molar_flow_out
-
-    @molar_flow_out.setter
-    def molar_flow_out(self, value: float):
-        self._molar_flow_out = value
+    @temperature_inlet.setter
+    def temperature_inlet(self, value):
+        self.temperature[0] = value
 
     @property
-    def temp_in(self):
-        return self._tempIn
+    def temperature_outlet(self):
+        return self.temperature[1]
+
+    @temperature_outlet.setter
+    def temperature_outlet(self, value):
+        self.temperature[1] = value
 
     @property
-    def temp_out(self):
-        return self._tempOut
+    def temperature_delta(self):
+        return self.temperature[2]
 
     @property
-    def press_in(self):
-        return self._pressIn
+    def pressure_inlet(self):
+        return self.pressure[0]
+
+    @pressure_inlet.setter
+    def pressure_inlet(self, value):
+        self.pressure[0] = value
 
     @property
-    def press_out(self):
-        return self._pressOut
+    def pressure_outlet(self):
+        return self.pressure[1]
+
+    @pressure_outlet.setter
+    def pressure_outlet(self, value):
+        self.pressure[1] = value
 
     @property
-    def volume(self):
-        return self._volume
+    def pressure_delta(self):
+        return self.pressure[2]
 
-    @property
-    def tay(self):
-        return self._tay
 
-    @property
-    def time_count(self):
-        return self._timeCount
+class Cascade:
+    def __init__(self, filename):
+        self.cascade = {}
+        self.filename = filename
 
-    @property
-    def count(self):
-        return self._count
+    def __repr__(self):
+        cascade = []
+        for reactor in self.cascade.values():
+            cascade.append(reactor.__repr__())
+        return ''.join(cascade)
 
-    @property
-    def numberOfSections(self):
-        return self._number_of_sections
+    def get_reactor(self, name):
+        return self.cascade[name]
+
+    def add_reactor(self, name, parameters):
+        self.cascade[name] = Reactor(**parameters)

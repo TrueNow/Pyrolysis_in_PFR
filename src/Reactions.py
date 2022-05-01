@@ -2,85 +2,68 @@ from math import exp
 
 
 class Reactions:
-    def __init__(self, reactions, filename):
+    def __init__(self, filename: str):
         self.filename = filename
-        self._reactions = {}
-        for id, reaction in reactions.items():
-            self._reactions[id] = Reaction(reaction)
+        self.reactions = {}
 
-    def choose_used_components(self):
+    def choose_used_components(self) -> dict:
         components = {}
-        for id, reaction in self.get_reactions().items():
+        for id, reaction in self.reactions.items():
             for component in reaction.balance.keys():
                 components[component] = 0
         return components
 
     def get_reaction(self, id):
-        return self._reactions[id]
+        return self.reactions[id]
 
-    def get_reactions(self):
-        return self._reactions
+    def add_reaction(self, id, parameters):
+        self.reactions[id] = Reaction(**parameters)
 
 
 class Reaction:
-    def __init__(self, parameters: dict):
-        self._A = parameters['A']
-        self._E = parameters['E']
-        self._n = parameters['n']
-        self._balance = {}
-        divider = parameters['Divider']
-        for name, value in parameters['Components'].items():
-            self._balance[name] = value / divider
-        self._order = parameters['Order']
-        self._equation = parameters['equation']
+    def __init__(self, id, A, E, n, divider, components, order, equation):
+        self.id = id
+        self.A = A
+        self.E = E
+        self.n = n
+        self.balance = {}
+        divider = divider
+        for name, value in components.items():
+            self.balance[name] = value / divider
+        self.order = order
+        self.equation = equation
 
     def calculate(self, components, section):
         rate = self.calculate_rate(components, section)
         result = {}
-        for name, coefficient in self._balance.items():
-            result[name] = rate * section.tay * coefficient
+        for name, coefficient in self.balance.items():
+            result[name] = rate * section.time * coefficient
         return result
 
     def calculate_rate(self, components, section):
         rate = self.calculate_k(section)
-        for component, coefficient in self._balance.items():
+        for component, coefficient in self.balance.items():
             if coefficient < 0:
-                rate *= (components.get_component(component).calc_concentration(section) ** (self._order[component]))
+                rate *= (components.get_component(component).calculate_concentration(section) ** (self.order[component]))
         return rate
 
     def calculate_k(self, section):
         R = 8.31432
         A = self.A
         E = self.E * 1000
-        T = section.temp_in + 273.15
+        T = section.temperature_inlet + 273.15
         return A * exp(- E / (R * T))
-
-    @property
-    def A(self):
-        return self._A
-
-    @property
-    def E(self):
-        return self._E
-
-    @property
-    def n(self):
-        return self._n
-
-    @property
-    def equation(self):
-        return self._equation
-
-    @property
-    def balance(self):
-        return self._balance
 
     def set_equation(self, components):
         """Создает уравнение одной реакции"""
         inlet, outlet = [], []
         for name, value in self.balance.items():
-            if value < 0:
-                inlet.append(f"{-value}{components.get_component(name).formula}")
-            else:
-                outlet.append(f"{value}{components.get_component(name).formula}")
-        self._equation = ' + '.join(inlet) + ' ---> ' + ' + '.join(outlet)
+            if value < 0 and abs(value) == 1:
+                inlet.append(f"{components.get_component(name).formula}")
+            elif value < 0 and abs(value) != 1:
+                inlet.append(f"{-value:.0f}{components.get_component(name).formula}")
+            elif value > 0 and abs(value) == 1:
+                outlet.append(f"{components.get_component(name).formula}")
+            elif value > 0 and abs(value) != 1:
+                outlet.append(f"{value:.0f}{components.get_component(name).formula}")
+        self.equation = ' + '.join(inlet) + ' ---> ' + ' + '.join(outlet)

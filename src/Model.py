@@ -6,46 +6,40 @@ class Model:
         self._reactions = reactions
         self._components = components
         self._cascade = cascade
+
         save = Saver(self)
 
-        start_row = 1
-        for name, reactor in self._cascade.get_cascade().items():
-            section = reactor.get_section()
+        for name, reactor in self._cascade.cascade.items():
+            print(reactor)
+            reactor.molar_flow = self._components.summary_mol_flow()
+            section = reactor.section
+            section.molar_flow = reactor.molar_flow
 
-            self._components.calculate_components(section.molar_flow_in)
-
-            save.init_in_xlsx(start_row)
-            save.reactor_in_xlsx(reactor)
-
+            save.init_in_xlsx()
             self.calculate_section(section)
-
-            self._components.calculate_components(section.molar_flow_out)
-
+            save.reactor_in_xlsx(reactor)
+            self._components.update_properties(section.molar_flow)
             save.result_in_xlsx()
-
-            start_row += (len(self._components.get_components()) + 6)
 
     def calculate_section(self, section):
         while section.next() is True:
-            concentration_inlet = {}
-            for name, component in self._components.get_components().items():
-                concentration_inlet[name] = component.calc_concentration(section)
+            for name, component in self._components.components.items():
+                component.concentration = component.calculate_concentration(section)
 
-            concentration_outlet = dict.copy(concentration_inlet)
-            total_concentration_inlet = sum(concentration_inlet.values())
+            total_concentration_inlet = self._components.summary_concentration()
 
-            for reaction in self._reactions.get_reactions().values():
+            for reaction in self._reactions.reactions.values():
                 result = reaction.calculate(self._components, section)
                 for name, delta in result.items():
-                    concentration_outlet[name] += delta
-                    if concentration_outlet[name] < 0:
+                    self._components.get_component(name).concentration += delta
+                    if self._components.get_component(name).concentration < 0:
                         print(f'Концентрация {name} меньше нуля!')
                         exit('Ну вот и все...')
 
-            total_concentration_outlet = sum(concentration_outlet.values())
-            for name, component in self._components.get_components().items():
-                component.mol_fr = concentration_outlet[name] / total_concentration_outlet
-            section.molar_flow_out = section.molar_flow_in * total_concentration_outlet / total_concentration_inlet
+            total_concentration_outlet = self._components.summary_concentration()
+            for name, component in self._components.components.items():
+                component.mol_fraction = component.concentration / total_concentration_outlet
+            section.molar_flow *= (total_concentration_outlet / total_concentration_inlet)
 
     def get_cascade(self):
         return self._cascade

@@ -1,144 +1,109 @@
-from DATA.components.read_components import read_components_from_xlsx
+class Component:
+    def __init__(self, name: str, molar_mass, type, formula):
+        """This class defines the component and its properties"""
+        self.name = name
+        self.molar_mass = molar_mass
+        self.ratio = 0.0
+        self.mol_fraction = 0.0
+        self.mol = 0.0
+        self.mass = 0.0
+        self.mass_fraction = 0.0
+        self.type = bool(type)
+        self.formula = formula
+        self.concentration = 0.0
+        self.iter = -1
+
+    def calculate_concentration(self, section):
+        """Calculate concentration of component in the mixture in section"""
+        R = 8.31432
+        return self.mol_fraction * section.pressure_inlet / (R * (section.temperature_inlet + 273.15))
+
+    def set_ratio(self, value: float):
+        try:
+            self.ratio = float(value)
+        except ValueError:
+            self.ratio = 0
 
 
 class Components:
-    def __init__(self, components):
-        all_components = read_components_from_xlsx()
-        self._components = {}
-        for name, parameters in all_components.items():
-            if name in components:
-                self._components[name] = Component(name, parameters)
+    """This class has all components as objects of class Component"""
 
-    def get_mol_fr(self):
+    def __init__(self):
+        self.components = {}
+
+    # -------------------------------------GETTERS-------------------------------------
+    def summary_mol_fraction(self) -> float:
+        """Get summary mole fraction from all components."""
         mol_fr = 0
-        for component in self._components.values():
-            mol_fr += component.mol_fr
-        return mol_fr
+        for component in self.components.values():
+            mol_fr += component.mol_fraction
+        return mol_fr  # = 1, when working correctly
 
-    def set_mol_fr(self):
-        mol_fr = 0
-        for component in self._components.values():
-            mol_fr += component.ratio
-        if mol_fr != 0:
-            for component in self._components.values():
-                component.mol_fr = component.ratio / mol_fr
-
-    def get_mol_flow(self):
+    def summary_mol_flow(self) -> float:
+        """Get summary molar flow."""
         molar_flow = 0
-        for component in self._components.values():
+        for component in self.components.values():
             molar_flow += component.mol
         return molar_flow
 
-    def set_mol_flow(self, molar_flow=0):
-        for component in self._components.values():
-            component.mol = component.mol_fr * molar_flow
-
-    def get_mass_flow(self):
+    def summary_mass_flow(self) -> float:
+        """Get summary mass flow."""
         mass_flow = 0
-        for component in self._components.values():
+        for component in self.components.values():
             mass_flow += component.mol * component.molar_mass
-        return mass_flow
+        return mass_flow  # must be constant, when working correctly
+
+    def summary_mass_fraction(self) -> float:
+        """Get summary mass fraction from all components.
+        When working correctly, the return is equal to 1."""
+        mass_fr = 0
+        for component in self.components.values():
+            mass_fr += component.mass_fraction
+        return mass_fr  # = 1, when working correctly
+
+    def summary_concentration(self) -> float:
+        inlet = 0
+        for component in self.components.values():
+            inlet += component.concentration
+        return inlet
+
+    # -------------------------------------SETTERS-------------------------------------
+    def set_mol_fr(self):
+        """Set mole fraction for each component from value of component.ratio"""
+        ratio_summary = 0
+        for component in self.components.values():
+            ratio_summary += component.ratio
+        if ratio_summary != 0:
+            for component in self.components.values():
+                component.mol_fraction = component.ratio / ratio_summary
+
+    def set_mol_flow(self, molar_flow: float):
+        """Set mole flow for each component from value of component.mol_fraction"""
+        for component in self.components.values():
+            component.mol = component.mol_fraction * molar_flow
 
     def set_mass_flow(self):
-        for component in self._components.values():
+        """Set mass flow for each component from value of component.mol"""
+        for component in self.components.values():
             component.mass = component.mol * component.molar_mass
 
-    def get_mass_fr(self):
-        mass_fr = 0
-        for component in self._components.values():
-            mass_fr += component.mass_fr
-        return mass_fr
-
     def set_mass_fr(self):
-        mass_flow = self.get_mass_flow()
-        for component in self._components.values():
+        """Set mass fraction for each component from value of component.mass"""
+        mass_flow = self.summary_mass_flow()
+        for component in self.components.values():
             if mass_flow != 0:
-                component.mass_fr = component.mass / mass_flow
+                component.mass_fraction = component.mass / mass_flow
 
-    def calculate_components(self, molar_flow=10):
-        """Расчет компонентоного состава"""
-        self.set_mol_fr()
+    def update_properties(self, molar_flow: float = 10):
+        """Updating the composition of flow components"""
         self.set_mol_flow(molar_flow)
         self.set_mass_flow()
         self.set_mass_fr()
 
-    def get_component(self, name: str):
-        return self._components[name]
+    # -------------------------------------OTHER-------------------------------------
+    def get_component(self, name: str) -> Component:
+        """Get object Component with name = name"""
+        return self.components[name]
 
-    def get_components(self):
-        return self._components
-
-
-class Component:
-    def __init__(self, name: str, parameters: dict):
-        self._name = str(name)
-        self._molarMass = parameters['Молярная масса']
-        self._ratio = parameters['Мольная доля']
-        self._molFr = 0.0
-        self._mol = 0.0
-        self._mass = 0.0
-        self._massFr = 0.0
-        self._type = bool(parameters['Молекула'])
-        self._formula = str(parameters['Формула'])
-
-    def calc_concentration(self, section):
-        R = 8.31432
-        T = section.temp_in + 273.15
-        P = section.press_in
-        return self.mol_fr * P / (R * T)
-
-    @property
-    def molar_mass(self):
-        return self._molarMass
-
-    @property
-    def ratio(self):
-        return self._ratio
-
-    @ratio.setter
-    def ratio(self, value: float):
-        try:
-            if float(value) > 0:
-                self._ratio = float(value)
-        except ValueError:
-            self._ratio = 0
-
-    @property
-    def mol_fr(self):
-        return self._molFr
-
-    @mol_fr.setter
-    def mol_fr(self, value):
-        self._molFr = value
-
-    @property
-    def mol(self):
-        return self._mol
-
-    @mol.setter
-    def mol(self, value):
-        self._mol = value
-
-    @property
-    def mass(self):
-        return self._mass
-
-    @mass.setter
-    def mass(self, value):
-        self._mass = value
-
-    @property
-    def mass_fr(self):
-        return self._massFr
-
-    @mass_fr.setter
-    def mass_fr(self, value: float):
-        self._massFr = value
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def formula(self):
-        return self._formula
+    def add_component(self, name: str, properties: dict):
+        self.components[name] = Component(**properties)
