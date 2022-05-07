@@ -118,14 +118,23 @@ class Cascade:
         self.cascade = {}
         self.filename = filename
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         cascade = []
         for reactor in self.cascade.values():
             cascade.append(reactor.__repr__())
         return ''.join(cascade)
 
-    def get_reactor(self, name):
+    def get_reactor(self, name) -> Reactor:
         return self.cascade[name]
 
-    def add_reactor(self, name, parameters):
+    def data_table(self) -> list:
+        data = []
+        for reactor in self.cascade.values():
+            data.append([reactor.name,
+                         f'{reactor.temperature_inlet:.1f}-{reactor.temperature_outlet:.1f}',
+                         f'{reactor.pressure_inlet:.1f}-{reactor.pressure_outlet:.1f}',
+                         f'{reactor.volume:.1f}', f'{reactor.number_of_sections:.0f}'])
+        return data
+
+    def add_reactor(self, name, parameters) -> None:
         self.cascade[name] = Reactor(**parameters)

@@ -4,36 +4,33 @@ from DATA.reactor.read_reactor import read_reactor_from_xlsx
 
 
 class WinReactors(sg.Window):
-    folder = './DATA/reactor'
-
-    def __init__(self, main):
-        """Инициализация окна определения каскада реакторов"""
+    def __init__(self):
+        """Открытие окна определения каскада реакторов и считывание действий"""
         super(WinReactors, self).__init__('Выбор реактора')
-        self.main = main
-
-    def open(self):
-        """Открытие окна и считывание действий"""
         file_list, folder = self.get_files()
+        self.check = True
         self.layout(self.layout_cascade(file_list))
 
         while True:
             event, values = self.read()
 
-            if event == sg.WIN_CLOSED:
-                break
+            match event:
+                case sg.WIN_CLOSED:
+                    self.check = False
+                    break
+                case 'LIST':
+                    filename = values[event][0]
+                    self.cascade = read_reactor_from_xlsx(folder=folder, filename=filename)
+                    self.data_table = self.cascade.data_table()
+                    self[f'TABLE'].update(values=self.data_table)
+                case 'OK':
+                    self.close()
 
-            elif event == 'LIST':
-                filename = values[event][0]
-                cascade, cascade_table = read_reactor_from_xlsx(folder, filename)
-                self[f'TABLE'].update(values=cascade_table)
+    def get_cascade(self):
+        return self.cascade
 
-            elif event == 'OK':
-                try:
-                    self.main.cascade, cascade_table = cascade, cascade_table
-                    self.main[f'TABLE-REACTORS'].update(cascade_table)
-                except UnboundLocalError:
-                    pass
-                self.close()
+    def get_data(self):
+        return self.data_table
 
     @staticmethod
     def get_files():
@@ -54,8 +51,8 @@ class WinReactors(sg.Window):
         reactor_2 = [
             [
                 sg.Table(
-                    values=[['', '', '', '', '', '', '']],
-                    headings=['Наименование', 'Tвх, C', 'Tвых, C', 'Pвх, кПа', 'Pвых, кПа', 'Объем, м3', 'Секций, шт'],
+                    values=[['', '', '', '', '']],
+                    headings=['Наименование', 'Температура, C', 'Давление, кПа', 'Объем, м3', 'Секций, шт'],
                     size=(50, 10), font='* 12',
                     key='TABLE', justification='center', auto_size_columns=True
                 )
