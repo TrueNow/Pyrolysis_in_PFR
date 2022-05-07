@@ -1,5 +1,5 @@
 class Component:
-    def __init__(self, name: str, molar_mass, type, formula):
+    def __init__(self, name: str, molar_mass, molecular, formula):
         """This class defines the component and its properties"""
         self.name = name
         self.molar_mass = molar_mass
@@ -8,7 +8,7 @@ class Component:
         self.mol = 0.0
         self.mass = 0.0
         self.mass_fraction = 0.0
-        self.type = bool(type)
+        self.molecular = bool(molecular)
         self.formula = formula
         self.concentration = 0.0
         self.iter = -1
@@ -30,6 +30,27 @@ class Components:
 
     def __init__(self):
         self.components = {}
+
+    def data_table_components(self):
+        table_data = []
+        for name, component in self.components.items():
+            if component.molecular:
+                table_data.append([f'{component.name}',
+                                   f'{component.molar_mass:.2f}',
+                                   f'{component.mol_fraction:.4f}',
+                                   f'{component.mol:.2f}',
+                                   f'{component.mass:.2f}',
+                                   f'{component.mass_fraction:.4f}'])
+        return table_data
+
+    def data_table_main(self):
+        table_data = []
+        for name, component in self.components.items():
+            if component.molecular:
+                table_data.append([f'{component.name}',
+                                   f'{component.mol_fraction:.4f}',
+                                   f'{component.mass_fraction:.4f}'])
+        return table_data
 
     # -------------------------------------GETTERS-------------------------------------
     def summary_mol_fraction(self) -> float:
@@ -69,7 +90,7 @@ class Components:
 
     # -------------------------------------SETTERS-------------------------------------
     def set_mol_fr(self):
-        """Set mole fraction for each component from value of component.ratio"""
+        """Set mole fraction for each component from value of component_ratio"""
         ratio_summary = 0
         for component in self.components.values():
             ratio_summary += component.ratio
@@ -78,17 +99,17 @@ class Components:
                 component.mol_fraction = component.ratio / ratio_summary
 
     def set_mol_flow(self, molar_flow: float):
-        """Set mole flow for each component from value of component.mol_fraction"""
+        """Set mole flow for each component from value of component_mol_fraction"""
         for component in self.components.values():
             component.mol = component.mol_fraction * molar_flow
 
     def set_mass_flow(self):
-        """Set mass flow for each component from value of component.mol"""
+        """Set mass flow for each component from value of component_mol"""
         for component in self.components.values():
             component.mass = component.mol * component.molar_mass
 
     def set_mass_fr(self):
-        """Set mass fraction for each component from value of component.mass"""
+        """Set mass fraction for each component from value of component_mass"""
         mass_flow = self.summary_mass_flow()
         for component in self.components.values():
             if mass_flow != 0:
