@@ -4,6 +4,8 @@ from src.Reactions import Reactions
 
 def read_reactions_from_xlsx(folder='./DATA/reactions',
                              filename='example.xlsx'):
+    global titles, values, components, coefficient, order
+
     xlsx = openpyxl.load_workbook(f'{folder}/{filename}', data_only=True)
     sheet = xlsx.active
 
@@ -12,30 +14,36 @@ def read_reactions_from_xlsx(folder='./DATA/reactions',
     row_id = 1
     while True:
         id = sheet.cell(column=1, row=row_id).value
-        if id is not None:
-            parameters = {
-                'id': id, 'balance': {},
-                'divider': 0, 'order': {},
-                'A': 0, 'E': 0, 'n': 0,
-                'equation': ''
-            }
+        if id is None:
+            break
+        parameters = {'id': id}
 
-            for col in range(2, 6):
-                name = sheet.cell(column=col, row=row_id).value
-                coefficient = sheet.cell(column=col, row=row_id + 1).value
-                order = sheet.cell(column=col, row=row_id + 2).value
-                if name is not None:
-                    parameters['components'][name] = coefficient
-                    parameters['order'][name] = order
+        for row in [row_id, row_id + 1, row_id + 2]:
+            for row_cells in sheet.iter_rows(min_col=2, max_col=5, min_row=row, max_row=row, values_only=True):
+                if row == row_id:
+                    components = [value for value in row_cells if value is not None]
+                elif row == row_id + 1:
+                    coefficient = [value for value in row_cells if value is not None]
+                elif row == row_id + 2:
+                    order = [value for value in row_cells if value is not None]
 
-            for col in range(6, 8):
-                parameter = sheet.cell(column=col, row=row_id).value
-                value = sheet.cell(column=col, row=row_id + 2).value
-                parameters[parameter] = value
-            parameters['n'] = sum(parameters['order'].values())
-            parameters['divider'] = sheet.cell(column=8, row=row_id + 1).value
-            row_id += 4
+        for row in [row_id, row_id + 2]:
+            for row_cells in sheet.iter_rows(min_col=6, max_col=7, min_row=row, max_row=row, values_only=True):
+                if row == row_id:
+                    titles = [value for value in row_cells if value is not None]
+                elif row == row_id + 2:
+                    values = [value for value in row_cells if value is not None]
 
-            reactions.add_reaction(id, parameters)
-        else:
-            return reactions
+        for i, title in enumerate(titles):
+            parameters[title] = values[i]
+        parameters['balance'] = {key: value for key, value in zip(components, coefficient)}
+        divider = sheet.cell(column=8, row=row_id + 1).value
+        parameters['order'] = {key: value / divider for key, value in zip(components, order)}
+        parameters['n'] = sum(parameters['order'].values())
+
+        print(parameters)
+        reactions.add_reaction(id, parameters)
+
+        row_id += 4
+
+    return reactions

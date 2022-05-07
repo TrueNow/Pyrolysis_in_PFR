@@ -13,6 +13,14 @@ class Reactions:
                 components[component] = 0
         return components
 
+    def data_table(self):
+        data = []
+        for id, reaction in self.reactions.items():
+            data.append([id, reaction.equation,
+                         f'{reaction.A:2.3e}',
+                         f'{reaction.E:.2f}'])
+        return data
+
     def get_reaction(self, id):
         return self.reactions[id]
 
@@ -21,17 +29,14 @@ class Reactions:
 
 
 class Reaction:
-    def __init__(self, id, A, E, n, divider, components, order, equation):
+    def __init__(self, id, A, E, n, balance, order):
         self.id = id
         self.A = A
         self.E = E
         self.n = n
-        self.balance = {}
-        divider = divider
-        for name, value in components.items():
-            self.balance[name] = value / divider
+        self.balance = balance
         self.order = order
-        self.equation = equation
+        self.equation = ''
 
     def calculate(self, components, section):
         rate = self.calculate_rate(components, section)

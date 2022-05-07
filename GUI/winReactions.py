@@ -6,38 +6,31 @@ from DATA.components.read_components import read_components_from_xlsx
 
 
 class WinReactions(sg.Window):
-    def __init__(self, main):
-        """Инициализация окна определения реакционного набора"""
+    def __init__(self):
+        """Открытие окна определения реакционного набора и считывание действий"""
         super(WinReactions, self).__init__('Реакционный набор')
-        self.main = main
-
-    def open(self):
-        """Открытие окна и считывание действий"""
         file_list, folder = self.get_files()
         self.layout(self.layout_reactions(file_list))
+        self.check = False
 
         while True:
             event, values = self.read()
 
-            if event == sg.WIN_CLOSED:
-                break
-
-            if event == 'LIST':
-                filename = values[event][0]
-                self.main.reactions = read_reactions_from_xlsx(folder, filename)
-                self.main.components = read_components_from_xlsx(components_dict=self.main.reactions.choose_used_components())
-                for reaction in self.main.reactions.reactions.values():
-                    reaction.set_equation(self.main.components)
-                data_table_values = self.update_table()
-                self[f'TABLE'].update(values=data_table_values)
-
-            elif event == 'OK':
-                try:
-                    data_table_values = self.update_table()
-                    self.main[f'TABLE-REACTIONS'].update(data_table_values)
-                except UnboundLocalError:
-                    pass
-                self.close()
+            match event:
+                case sg.WIN_CLOSED:
+                    break
+                case 'LIST':
+                    filename = values[event][0]
+                    self.reactions = read_reactions_from_xlsx(folder, filename)
+                    components_dict = self.reactions.choose_used_components()
+                    self.components = read_components_from_xlsx(components_dict=components_dict)
+                    for reaction in self.reactions.reactions.values():
+                        reaction.set_equation(self.components)
+                    self.data_table = self.reactions.data_table()
+                    self[f'TABLE'].update(values=self.data_table)
+                case 'OK':
+                    self.check = True
+                    self.close()
 
     @staticmethod
     def get_files():
@@ -48,17 +41,6 @@ class WinReactions(sg.Window):
             if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith('.xlsx')
         ]
         return names, folder
-
-    def update_table(self):
-        table_data = []
-        for id, reaction in self.main.reactions.get_reactions().items():
-            table_data.append([
-                id,
-                reaction.equation,
-                f'{reaction.A:2.3e}',
-                f'{reaction.E:.2f}'
-            ])
-        return table_data
 
     @staticmethod
     def layout_reactions(names) -> list:
