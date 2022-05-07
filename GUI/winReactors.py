@@ -8,7 +8,7 @@ class WinReactors(sg.Window):
         """Открытие окна определения каскада реакторов и считывание действий"""
         super(WinReactors, self).__init__('Выбор реактора')
         file_list, folder = self.get_files()
-        self.check = True
+        self.check = False
         self.layout(self.layout_cascade(file_list))
 
         while True:
@@ -16,7 +16,6 @@ class WinReactors(sg.Window):
 
             match event:
                 case sg.WIN_CLOSED:
-                    self.check = False
                     break
                 case 'LIST':
                     filename = values[event][0]
@@ -24,6 +23,7 @@ class WinReactors(sg.Window):
                     self.data_table = self.cascade.data_table()
                     self[f'TABLE'].update(values=self.data_table)
                 case 'OK':
+                    self.check = True
                     self.close()
 
     def get_cascade(self):
