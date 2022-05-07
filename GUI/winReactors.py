@@ -20,17 +20,11 @@ class WinReactors(sg.Window):
                 case 'LIST':
                     filename = values[event][0]
                     self.cascade = read_reactor_from_xlsx(folder=folder, filename=filename)
-                    self.data_table = self.cascade.data_table()
-                    self[f'TABLE'].update(values=self.data_table)
+                    data_table = self.cascade.data_table()
+                    self[f'TABLE'].update(values=data_table)
                 case 'OK':
                     self.check = True
                     self.close()
-
-    def get_cascade(self):
-        return self.cascade
-
-    def get_data(self):
-        return self.data_table
 
     @staticmethod
     def get_files():

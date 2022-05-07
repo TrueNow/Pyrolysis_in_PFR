@@ -26,8 +26,8 @@ class WinReactions(sg.Window):
                     self.components = read_components_from_xlsx(components_dict=components_dict)
                     for reaction in self.reactions.reactions.values():
                         reaction.set_equation(self.components)
-                    self.data_table = self.reactions.data_table()
-                    self[f'TABLE'].update(values=self.data_table)
+                    data_table = self.reactions.data_table()
+                    self[f'TABLE'].update(values=data_table)
                 case 'OK':
                     self.check = True
                     self.close()
