@@ -8,6 +8,10 @@ from GUI.winReactions import WinReactions
 from GUI.winComponents import WinComposition
 from GUI.winReactors import WinReactors
 
+from src.Reactions import Reactions
+from src.Components import Components
+from src.Reactor import Cascade
+
 
 class WinMain(sg.Window):
     _reactions = ''
@@ -25,15 +29,50 @@ class WinMain(sg.Window):
                 case sg.WIN_CLOSED:
                     break
                 case "BUTTON-REACTIONS":
-                    WinReactions(self).open()
+                    self.win_reactions()
                 case "BUTTON-COMPONENTS":
-                    WinComposition(self).open()
+                    self.win_components()
                 case "BUTTON-REACTORS":
-                    WinReactors(self).open()
+                    self.win_reactor()
                 case "BUTTON-START":
+                    self.start()
+
+    def win_reactions(self):
+        win_reactions = WinReactions()
+        if win_reactions.check:
+            self._reactions = win_reactions.reactions
+            self._components = win_reactions.components
+            self["TABLE-REACTIONS"].update(self._reactions.data_table())
+
+    def win_components(self):
+        try:
+            win_components = WinComposition(self._components)
+            if win_components.check:
+                self._components = win_components.components
+                self["TABLE-COMPONENTS"].update(self._components.data_table_main())
+        except AttributeError:
+            messagebox.showerror(title='Ошибка', message='Выберите реакционный набор')
+            self.win_reactions()
+
+    def win_reactor(self):
+        win_reactors = WinReactors()
+        if win_reactors.check:
+            self._cascade = win_reactors.cascade
+            self["TABLE-REACTORS"].update(self._cascade.data_table())
+
+    def start(self):
+        if self._components.summary_mol_fraction():
+            if isinstance(self._reactions, Reactions):
+                if isinstance(self._cascade, Cascade):
                     self.close()
-                    Model(reactions=self.reactions, components=self.components, cascade=self.cascade)
+                    Model(reactions=self._reactions, components=self._components, cascade=self._cascade)
                     messagebox.showinfo(title='Выполнено', message='Расчет выполнен')
+                else:
+                    messagebox.showerror(title='Ошибка', message='Не выбран реактор')
+            else:
+                messagebox.showerror(title='Ошибка', message='Не выбран реакционный набор')
+        else:
+            messagebox.showerror(title='Ошибка', message='Не выбран состав потока')
 
     @staticmethod
     def layout_main() -> list:
@@ -56,9 +95,8 @@ class WinMain(sg.Window):
                 [
                     sg.Button(button_text='Выбор реактора', key='BUTTON-REACTORS', size=(20, 2)),
                     sg.Table(
-                        values=[[' ', ' ', ' ', ' ', ' ', ' ', ' ']],
-                        headings=['Наименование', 'Tвх, C', 'Tвых, C',
-                                  'Pвх, кПа', 'Pвых, кПа', 'Объем, м3', 'Секций, шт'],
+                        values=[['', '', '', '', '']],
+                        headings=['Наименование', 'Температура, C', 'Давление, кПа', 'Объем, м3', 'Секций, шт'],
                         size=(20, 2), key='TABLE-REACTORS', justification='center', auto_size_columns=True)
                 ],
                 [sg.Button(button_text='Начать', key='BUTTON-START', size=(42, 2))]
@@ -66,27 +104,3 @@ class WinMain(sg.Window):
         ]
 
         return layout
-
-    @property
-    def reactions(self):
-        return self._reactions
-
-    @reactions.setter
-    def reactions(self, value):
-        self._reactions = value
-
-    @property
-    def components(self):
-        return self._components
-
-    @components.setter
-    def components(self, value):
-        self._components = value
-
-    @property
-    def cascade(self):
-        return self._cascade
-
-    @cascade.setter
-    def cascade(self, value):
-        self._cascade = value
