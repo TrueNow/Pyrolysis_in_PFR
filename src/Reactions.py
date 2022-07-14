@@ -1,74 +1,71 @@
 from math import exp
 
 
-class Reactions:
-    def __init__(self, filename: str):
-        self.filename = filename
-        self.reactions = {}
-
-    def choose_used_components(self) -> dict:
-        components = {}
-        for id, reaction in self.reactions.items():
-            for component in reaction.balance.keys():
-                components[component] = 0
-        return components
-
-    def data_table(self):
-        data = []
-        for id, reaction in self.reactions.items():
-            data.append([id, reaction.equation,
-                         f'{reaction.A:2.3e}',
-                         f'{reaction.E:.2f}'])
-        return data
-
-    def get_reaction(self, id):
-        return self.reactions[id]
-
-    def add_reaction(self, id, parameters):
-        self.reactions[id] = Reaction(**parameters)
-
-
 class Reaction:
-    def __init__(self, id, A, E, n, balance, order):
-        self.id = id
+    def __init__(self, id, A: float | int, E: float | int, components_reaction: list[str, float | int, float | int]):
+        self.id: any = id
         self.A = A
         self.E = E
-        self.n = n
-        self.balance = balance
-        self.order = order
-        self.equation = ''
+        self.components_reaction = components_reaction  # [[name, coef, order], ...]
+        self.equation: str = ''
 
-    def calculate(self, components, section):
-        rate = self.calculate_rate(components, section)
-        result = {}
-        for name, coefficient in self.balance.items():
-            result[name] = rate * section.time * coefficient
-        return result
+    def __repr__(self) -> str:
+        return f'{self.id} {self.equation}'
 
-    def calculate_rate(self, components, section):
-        rate = self.calculate_k(section)
-        for component, coefficient in self.balance.items():
-            if coefficient < 0:
-                rate *= (components.get_component(component).calculate_concentration(section) ** (self.order[component]))
+    def calculate_rate(self, flow, temperature: float) -> float:
+        rate = self.calculate_k(temperature)
+        for component_name, _, order in self.components_reaction:
+            if order:
+                component = flow.get_component(component_name)
+                rate *= (component.concentration ** order)
         return rate
 
-    def calculate_k(self, section):
+    def calculate_k(self, temperature) -> float:
         R = 8.31432
         A = self.A
         E = self.E * 1000
-        T = section.temperature_inlet + 273.15
+        T = temperature + 273.15
         return A * exp(- E / (R * T))
 
-    def set_equation(self, components):
+    def set_equation(self, components) -> None:
         """Создает уравнение одной реакции"""
         inlet, outlet = [], []
-        for name, value in self.balance.items():
-            if value < 0 and abs(value) == 1:
-                inlet.append(f"{components.get_component(name).formula}")
-            elif value < 0 and abs(value) != 1:
-                inlet.append(f"{-value:.0f}{components.get_component(name).formula}")
-            elif value > 0 and abs(value) == 1:
-                outlet.append(f"{components.get_component(name).formula}")
-            elif value > 0 and abs(value) != 1:
-                outlet.append(f"{value:.0f}{components.get_component(name).formula}")
+        for component_name, stoich, _ in self.components_reaction:
+            component = components.get_component(component_name)
+            if stoich < 0 and abs(stoich) == 1:
+                inlet.append(f"{component.formula}")
+            elif stoich < 0 and abs(stoich) != 1:
+                inlet.append(f"{-stoich:.0f}{component.formula}")
+            elif stoich > 0 and abs(stoich) == 1:
+                outlet.append(f"{component.formula}")
+            elif stoich > 0 and abs(stoich) != 1:
+                outlet.append(f"{stoich:.0f}{component.formula}")
         self.equation = ' + '.join(inlet) + ' ---> ' + ' + '.join(outlet)
+
+
+class Reactions:
+    def __init__(self, filename: str):
+        self.filename: str = filename
+        self._reactions: dict = {}
+
+    def __str__(self) -> str:
+        return f'{[reaction for reaction in self.get_reactions()]}'
+
+    def choose_used_components(self) -> list:
+        components = []
+        for reaction in self.get_reactions():
+            for component_name, _, _ in reaction.components_reaction:
+                if component_name in components:
+                    pass
+                else:
+                    components.append(component_name)
+        return components
+
+    def get_reactions(self):
+        return self._reactions.values()
+
+    # def get_reaction(self, id) -> Reaction:
+    #     return self._reactions[id]
+
+    def add_reaction(self, id, parameters) -> None:
+        self._reactions[id] = Reaction(id, **parameters)

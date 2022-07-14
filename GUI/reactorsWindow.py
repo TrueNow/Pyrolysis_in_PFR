@@ -3,28 +3,27 @@ import PySimpleGUI as sg
 from DATA.reactor.read_reactor import read_reactor_from_xlsx
 
 
-class WinReactors(sg.Window):
+class ReactorsWindow(sg.Window):
     def __init__(self):
         """Открытие окна определения каскада реакторов и считывание действий"""
-        super(WinReactors, self).__init__('Выбор реактора')
+        super(ReactorsWindow, self).__init__('Выбор реактора')
         file_list, folder = self.get_files()
         self.check = False
         self.layout(self.layout_cascade(file_list))
 
+    def open(self):
         while True:
             event, values = self.read()
 
             match event:
                 case sg.WIN_CLOSED:
-                    break
+                    return False
                 case 'LIST':
-                    filename = values[event][0]
-                    self.cascade = read_reactor_from_xlsx(folder=folder, filename=filename)
-                    data_table = self.cascade.data_table()
-                    self[f'TABLE'].update(values=data_table)
+                    self.cascade = read_reactor_from_xlsx(filename=values[event][0])
+                    self[f'TABLE'].update(values=self.data_table())
                 case 'OK':
-                    self.check = True
                     self.close()
+                    return True
 
     @staticmethod
     def get_files():
@@ -35,6 +34,10 @@ class WinReactors(sg.Window):
             if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith('.xlsx')
         ]
         return names, folder
+
+    def data_table(self) -> list:
+        return [[reactor.name, reactor.temperature_string, reactor.pressure_string,
+                 reactor.volume, reactor.sections_count] for reactor in self.cascade.get_reactors()]
 
     @staticmethod
     def layout_cascade(filenames) -> list:

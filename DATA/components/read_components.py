@@ -1,26 +1,23 @@
 import openpyxl
-from src.Components import Components
+from src.Flow import Components
+
+FOLDER = './DATA/components'
+FILE = 'All_components.xlsx'
 
 
-def read_components_from_xlsx(folder: str = './DATA/components',
-                              filename: str = 'All_components.xlsx',
-                              components_dict: dict = None):
-    if components_dict is None:
-        components_dict = {}
-    file = f'{folder}/{filename}'
+def read_components_from_xlsx(used_components: list) -> Components:
+    file = f'{FOLDER}/{FILE}'
 
     xlsx = openpyxl.load_workbook(file, data_only=True)
     sheet = xlsx.active
 
     components = Components()
 
-    titles = [col[0] for col in sheet.iter_cols(min_col=1, max_col=4, values_only=True)]
+    for name, molar_mass, molecular, formula in sheet.iter_rows(min_row=2, min_col=1, max_col=4, values_only=True):
+        if name is None:
+            break
+        if name in used_components:
+            properties = {'molar_mass': molar_mass, 'molecular': molecular, 'formula': formula}
+            components.add_component(name, properties)
 
-    for row in sheet.iter_rows(min_row=2, values_only=True):
-        if row[0] is not None:
-            properties = {}
-            for col, title in enumerate(titles):
-                properties[title] = row[col]
-            if properties['name'] in components_dict.keys():
-                components.add_component(properties['name'], properties)
     return components

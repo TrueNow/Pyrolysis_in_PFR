@@ -2,7 +2,10 @@ import openpyxl
 
 
 class Saver:
-    """Модуль предназначен для сохранения введенных данных и результатов в таблицу Excel"""
+    """Класс предназначен для сохранения введенных данных и результатов в таблицу Excel"""
+
+    ROW_COMP = 1
+    COL_COMP = 1
 
     _ROW = 1
     _NEXT_ROW = 5
@@ -10,76 +13,61 @@ class Saver:
     _REACTOR_COLUMN = 8
     _RESULT_COMPONENTS_COLUMN = 14
 
+    _COL_TIME = 2
+
     def __init__(self, model):
         self.model = model
-        self.filename = f'{self.model.get_reactions().filename[:-5]} in {self.model.get_cascade().filename[:-5]}.xlsx'
+        reaction_filename = self.model.get_reactions().filename.split('.')[0]
+        reactor_filename = self.model.get_cascade().filename.split('.')[0]
+        self.filename = f'{reaction_filename} in {reactor_filename}.xlsx'
 
         # Создание Excel файла
         self.xlsx = openpyxl.Workbook()
-        self.sheet = self.xlsx.active
-        self.sheet.title = 'Результаты'
+        self.sheet_reactor = self.xlsx.active
+        self.sheet_reactor.title = 'Реактор'
+        # self.sheet_reactions = self.xlsx.create_sheet(title='Реакции')
+        # self.sheet_short_result = self.xlsx.create_sheet(title='Результат')
+        self.sheet_result = self.xlsx.create_sheet(title='Сводка')
+        self.sheet_time = self.xlsx.create_sheet(title='Время')
+        self.set_composition_on_sheet(self.sheet_result)
+        self.set_composition_on_sheet(self.sheet_time)
 
-    def init_in_xlsx(self):
-        row, column = self._ROW, self._INIT_COMPONENTS_COLUMN
-        self.save_components(row, column)
+    def set_composition_on_sheet(self, sheet):
+        row = 1
+        sheet.cell(row=row, column=1, value='Компонент')
+        sheet.cell(row=row, column=2, value='Молярная масса,\nкг/кмоль')
+        for component in self.model.get_flow().get_composition():
+            row += 1
+            sheet.cell(row=row, column=1, value=component.name)
+            sheet.cell(row=row, column=2, value=component.molar_mass).number_format = '0.0000'
 
-    def reactor_in_xlsx(self, reactor):
-        PARAMETERS = [
-            [reactor.name, 'Вход', 'Выход', None],
-            ['Температура', reactor.temperature_inlet, reactor.temperature_outlet, 'C'],
-            ['Давление', reactor.pressure_inlet, reactor.pressure_outlet, 'кПа'],
-            ['Объем реактора', reactor.volume, None, 'м3'],
-            ['Число секций', reactor.number_of_sections, None, 'шт'],
-            ['Время пребывания', reactor.time, None, 'с']
+    def reactor(self, reactor):
+        VALUES_REACTOR = [
+            ['Параметр', reactor.name],
+            ['Температура, С', reactor.temperature_string],
+            ['Давление, кПа', reactor.pressure_string],
+            ['Объем реактора, м3', reactor.volume],
+            ['Кол-во секций, шт', reactor.sections_count],
+            ['Время пребывания, с', reactor.resident_time]
         ]
-        ROUNDING = ['', '0.00', '0.00', '0.00', '0', '0.000000']
+        ROUNDINGS = ['', '0.00', '0.00', '0.00', '0', '0.000000']
 
         row, column = self._ROW, self._REACTOR_COLUMN
-        for current_row in range(len(PARAMETERS)):
-            for current_column in range(len(PARAMETERS[current_row])):
-                cell = self.sheet.cell(row=row + current_row, column=column + current_column)
-                cell.value = PARAMETERS[current_row][current_column]
-                cell.number_format = ROUNDING[current_row]
-
+        for current_row, parameters in enumerate(VALUES_REACTOR):
+            for current_column, parameter in enumerate(parameters):
+                self.sheet_reactor.cell(row=row + current_row, column=column + current_column, value=parameter).number_format = ROUNDINGS[current_row]
+        self._ROW += 7
         self.xlsx.save(f'{self.filename}')
 
-    def result_in_xlsx(self):
-        row, column = self._ROW, self._RESULT_COMPONENTS_COLUMN
-        self.save_components(row, column)
-        self._ROW += (self._NEXT_ROW + len(self.model.get_components().components))
-
-    def save_components(self, start_row, start_column):
+    @staticmethod
+    def write_in_xlsx(data, start_row, start_col, sheet) -> None:
         row = start_row
-        column = start_column
-
-        components = self.model.get_components()
-
-        TITLES = ['Component', 'MolarMass', 'MolFr', 'Mol', 'Mass', 'MassFr']
-        COMPONENTS = {}
-        for name, component in components.components.items():
-            if component.type:
-                COMPONENTS[name] = [component.name, component.molar_mass, component.mol_fraction,
-                                    component.mol, component.mass, component.mass_fraction]
-        RESULT = ['Сумма', None, components.summary_mol_fraction(), components.summary_mol_flow(),
-                  components.summary_mass_flow(), components.summary_mass_fraction()]
-        ROUNDING = ['', '0.00', '0.0000', '0.00', '0.00', '0.0000']
-
-        for current_column in range(len(TITLES)):
-            cell = self.sheet.cell(row=row, column=column + current_column)
-            cell.value = TITLES[current_column]
-            cell.number_format = ROUNDING[current_column]
-        row += 1
-
-        for name, properties in COMPONENTS.items():
-            for current_column in range(len(properties)):
-                cell = self.sheet.cell(row=row, column=column + current_column)
-                cell.value = properties[current_column]
-                cell.number_format = ROUNDING[current_column]
+        for row_list in data:
+            col = start_col
+            for item in row_list:
+                sheet.cell(row=row, column=col, value=item).number_format = '0.0000'
+                col += 1
             row += 1
 
-        for current_column in range(len(RESULT)):
-            cell = self.sheet.cell(row=row, column=column + current_column)
-            cell.value = RESULT[current_column]
-            cell.number_format = ROUNDING[current_column]
-
+    def save(self):
         self.xlsx.save(f'{self.filename}')
