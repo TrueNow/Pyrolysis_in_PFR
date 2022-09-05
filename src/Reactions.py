@@ -2,11 +2,13 @@ from math import exp
 
 
 class Reaction:
-    def __init__(self, id, A: float | int, E: float | int, components_reaction: list[str, float | int, float | int]):
+    def __init__(self, id, A: float, E: float,
+                 components_reaction: list[str, float, float]):
         self.id: any = id
         self.A = A
         self.E = E
-        self.components_reaction = components_reaction  # [[name, coef, order], ...]
+        # components_reaction = [[name, coef, order], ...]
+        self.components_reaction = components_reaction
         self.equation: str = ''
 
     def __repr__(self) -> str:
@@ -63,9 +65,6 @@ class Reactions:
 
     def get_reactions(self):
         return self._reactions.values()
-
-    # def get_reaction(self, id) -> Reaction:
-    #     return self._reactions[id]
 
     def add_reaction(self, id, parameters) -> None:
         self._reactions[id] = Reaction(id, **parameters)

@@ -38,7 +38,7 @@ class Component:
             return self.mol * self.molar_mass
         return self.mass_fraction * mass_flow
 
-    def calculate_concentration(self, temperature: float | int, pressure: float | int):
+    def calculate_concentration(self, temperature: float, pressure: float):
         """Calculate concentration of component in the mixture in section"""
         R = 8.31432  # кДж / (кмоль * К)
         T = temperature + 273.15  # К

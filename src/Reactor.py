@@ -36,9 +36,9 @@ class Reactor:
     molar_flow: float = 0
     resident_time: float = 0
 
-    def __init__(self, name: str, volume: float | int, steps: int,
-                 temp_in: float | int, temp_out: float | int,
-                 press_in: float | int, press_out: float | int):
+    def __init__(self, name: str, volume: float, steps: int,
+                 temp_in: float, temp_out: float,
+                 press_in: float, press_out: float):
         self.name = name
         self.volume = volume
         self.sections_count = steps

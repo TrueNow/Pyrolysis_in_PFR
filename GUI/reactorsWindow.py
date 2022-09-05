@@ -15,15 +15,14 @@ class ReactorsWindow(sg.Window):
         while True:
             event, values = self.read()
 
-            match event:
-                case sg.WIN_CLOSED:
-                    return False
-                case 'LIST':
-                    self.cascade = read_reactor_from_xlsx(filename=values[event][0])
-                    self[f'TABLE'].update(values=self.data_table())
-                case 'OK':
-                    self.close()
-                    return True
+            if event == sg.WIN_CLOSED:
+                return False
+            elif event == 'LIST':
+                self.cascade = read_reactor_from_xlsx(filename=values[event][0])
+                self[f'TABLE'].update(values=self.data_table())
+            elif event == 'OK':
+                self.close()
+                return True
 
     @staticmethod
     def get_files():

@@ -45,9 +45,6 @@ class Model:
 
             while section.next():  # and reactor.resident_time < 0.1:
                 self.calculate_section(section)
-                # progress = (section.current_section * 100) / reactor.sections_count
-                # if progress in [1, 20, 40, 60, 80]:
-                #     print(f'Прогресс: {progress}%')
 
                 reactor.resident_time += section.resident_time
                 self._cascade.resident_time += section.resident_time
@@ -56,7 +53,6 @@ class Model:
                     self._flow.update_composition(section.molar_flow, 'mol')
                     self.save_mass_fraction(c_t)
 
-            # section.total_concentration_outlet = self._flow.summary_concentration()
             for component in self._flow.get_composition():
                 if component.concentration != 0:
                     component.mol_fraction = component.concentration / section.total_concentration_outlet

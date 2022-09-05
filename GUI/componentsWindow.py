@@ -1,4 +1,5 @@
 import PySimpleGUI as sg
+
 from src.Flow import Flow, Components, MOL, MASS
 
 
@@ -21,10 +22,6 @@ class SettingCompositionWindow(sg.Window):
                 if self._flow.summary_fractions(MOL):
                     return True
                 return False
-
-            # elif event in [MOL, MASS]:
-            #     for component in self._flow.get_composition():
-            #         values[f'INPUT_{component.name}'].default_text = f'{component.ratio:.4f}'
 
     def set_composition(self, values):
         for component in self._flow.get_composition():
@@ -69,12 +66,20 @@ class SettingCompositionWindow(sg.Window):
                 else:
                     default_text = ''
                 column_input.append(
-                    [sg.Input(key=f'INPUT_{component.name}', default_text=default_text, **setting_input)]
+                    [
+                        sg.Input(
+                            key=f'INPUT_{component.name}',
+                            default_text=default_text,
+                            **setting_input
+                        )
+                    ]
                 )
 
         column_radio = [
-            [sg.Radio(text='Мол. доля', group_id=1, default=True, key=MOL, enable_events=True)],
-            [sg.Radio(text='Масс. доля', group_id=1, default=False, key=MASS, enable_events=True)],
+            [sg.Radio(text='Мол. доля', group_id=1,
+                      default=True, key=MOL, enable_events=True)],
+            [sg.Radio(text='Масс. доля', group_id=1,
+                      default=False, key=MASS, enable_events=True)],
             [],
             [sg.Text(text='Расход\nкмоль/с или кг/с')],
             [sg.Input(key='flow', **setting_input)],
@@ -109,7 +114,8 @@ class SettingCompositionWindow(sg.Window):
                 f'{component.mol:2.2f}',
                 f'{component.mass:4.2f}',
                 f'{component.mass_fraction:.4f}'
-            ] for component in self._flow.get_composition() if component.is_molecular() and component.mol_fraction
+            ] for component in self._flow.get_composition()
+            if component.is_molecular() and component.mol_fraction
         ]
         table_data.append(
             [
